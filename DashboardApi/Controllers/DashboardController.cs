@@ -22,28 +22,45 @@ namespace EchoApi.Controllers
       [HttpGet]
       public async Task<Dashboard> GetDashboard()
       {
-         var httpClient = new HttpClient();
+            var httpClient = new HttpClient();
 
-         // Create and run the tasks that would fetch the purchases & recommendations asynchronously
-         var purchasesTask = httpClient.GetStringAsync( $"http://purchases-svc.ecom/purchases" );
-         var recommendationsTask = httpClient.GetStringAsync( $"http://recommendations-svc.ecom/recommendations" );
+            // Create and run the tasks that would fetch the purchases & recommendations asynchronously
+            //var purchasesTask = httpClient.GetStringAsync($"http://dotnet-test-purchase/purchases");
+            var purchasesTask = httpClient.GetStringAsync($"http://purchase-svc.dotnetmicros/purchases");
 
-         // Await (Not Wait) on both the purchases and recommendations fetch tasks
-         await Task.WhenAll( purchasesTask, recommendationsTask );
+            //var purchasesTask = Task.FromResult<object>(null);
+            var recommendationsTask = httpClient.GetStringAsync($"http://dotnet-recomm-svc.dotnetmicros/recommendations");
 
-         _logger.LogInformation( $"Purchases JSON: {purchasesTask.Result}" );
-         _logger.LogInformation( $"Recommendations JSON: {recommendationsTask.Result}" );
+            // Await (Not Wait) on both the purchases and recommendations fetch tasks
+            await Task.WhenAll(purchasesTask, recommendationsTask);
 
-         // Retrieve the results and covert to required objects
-         var purchases = JsonConvert.DeserializeObject<List<Purchase>>( purchasesTask.Result );
-         var recommendations = JsonConvert.DeserializeObject<List<Recommendation>>( recommendationsTask.Result );
+            _logger.LogInformation($"Purchases JSON: {purchasesTask.Result}");
+            _logger.LogInformation($"Recommendations JSON: {recommendationsTask.Result}");
 
-         // Return the aggregated Dashboard object
-         return new Dashboard
-         {
-            Purchases = purchases,
-            Recommendations = recommendations
-         };
-      }
-   }
+            // Retrieve the results and covert to required objects
+            var purchases = JsonConvert.DeserializeObject<List<Purchase>>(purchasesTask.Result);
+            var recommendations = JsonConvert.DeserializeObject<List<Recommendation>>(recommendationsTask.Result);
+
+            // Return the aggregated Dashboard object
+            return new Dashboard
+            {
+                Purchases = purchases,
+                Recommendations = recommendations
+            };
+            //return new List<Purchase> {
+            //    new Purchase()
+            //    {
+            //       BookName = "The Star Wars",
+            //       DateOfPurchase = new System.DateTime(2022,1,1),
+            //       Price = 100.99
+            //    },
+            //    new Purchase()
+            //    {
+            //       BookName = "The Gladiator",
+            //       DateOfPurchase = new System.DateTime(2022,1,1),
+            //       Price = 49.99
+            //    }
+            // };
+        }
+    }
 }

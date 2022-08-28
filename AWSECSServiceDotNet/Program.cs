@@ -34,8 +34,8 @@ namespace AWSECSTaskCreationDotNet
          var configBuilder = new ConfigurationBuilder().AddJsonFile( "appsettings.json" );
          var config = configBuilder.Build();
 
-         var purchasesRepoUri = await CreateECRRepositoryAsync( config, "purchasesapi" );
-         await CreateServiceWithServiceDiscovery( config, "purchases-svc", "purchases-svc-task", purchasesRepoUri, false );
+            var purchasesRepoUri = "694354665260.dkr.ecr.us-east-1.amazonaws.com/packages/purchasesapi-7e1abe3f09a54475a76c05e6c8133225"; // await CreateECRRepositoryAsync(config, "purchasesapi");
+            await CreateServiceWithServiceDiscovery( config, "purchases-svc", "purchases-svc-task", purchasesRepoUri, false );
 
          var recommendationsRepoUri = await CreateECRRepositoryAsync( config, "recommendationsapi" );
          await CreateServiceWithServiceDiscovery( config, "recommendations-svc", "recommendations-svc-task", recommendationsRepoUri, false );
@@ -55,6 +55,7 @@ namespace AWSECSTaskCreationDotNet
          Amazon.ECR.AmazonECRClient client = new Amazon.ECR.AmazonECRClient(
                                  config["ECRApiKey"],
                                  config["ECRApiSecret"],
+                                 config["ECRApiSessionToken"],
                                  RegionEndpoint.GetBySystemName( config["ECRRegion"] ) );
 
          // Create a repository in the AWS ECR (Elastic Container Registry)
@@ -128,6 +129,7 @@ namespace AWSECSTaskCreationDotNet
          Amazon.CloudWatchLogs.AmazonCloudWatchLogsClient logClient = new Amazon.CloudWatchLogs.AmazonCloudWatchLogsClient(
                                  config["ECSApiKey"],
                                  config["ECSApiSecret"],
+                                 config["ECRApiSessionToken"],
                                  RegionEndpoint.GetBySystemName( config["ECRRegion"] ) );
 
          var logGroupsResponse = await logClient.DescribeLogGroupsAsync( new DescribeLogGroupsRequest()
@@ -153,11 +155,12 @@ namespace AWSECSTaskCreationDotNet
          AmazonECSClient ecsClient = new AmazonECSClient(
                                  config["ECSApiKey"],
                                  config["ECSApiSecret"],
+                                 config["ECRApiSessionToken"],
                                  RegionEndpoint.GetBySystemName( config["ECRRegion"] ) );
 
          var taskResponse = await ecsClient.RegisterTaskDefinitionAsync( new Amazon.ECS.Model.RegisterTaskDefinitionRequest()
          {
-            RequiresCompatibilities = new List<string>() { "FARGATE" },
+            RequiresCompatibilities = new List<string>() { "EC2" },
             TaskRoleArn = "ecsTaskExecutionRole",
             ExecutionRoleArn = "ecsTaskExecutionRole",
             Cpu = "256",
@@ -194,6 +197,7 @@ namespace AWSECSTaskCreationDotNet
             new Amazon.ServiceDiscovery.AmazonServiceDiscoveryClient(
                         config["ECSApiKey"],
                         config["ECSApiSecret"],
+                        config["ECRApiSessionToken"],
                         RegionEndpoint.GetBySystemName( config["ECRRegion"] ) );
 
 
@@ -259,13 +263,13 @@ namespace AWSECSTaskCreationDotNet
             {
                Cluster = config["Cluster"],
                DesiredCount = 1,
-               LaunchType = LaunchType.FARGATE,
+               LaunchType = LaunchType.EC2,
                NetworkConfiguration = new Amazon.ECS.Model.NetworkConfiguration()
                {
                   AwsvpcConfiguration = new Amazon.ECS.Model.AwsVpcConfiguration()
                   {
                      Subnets = config["Subnet"].Split( ',' ).ToList(),
-                     AssignPublicIp = AssignPublicIp.ENABLED,
+                     AssignPublicIp = AssignPublicIp.DISABLED,
                      SecurityGroups = new List<string> { config["SecurityGroup"] }
                   }
                },
@@ -297,7 +301,7 @@ namespace AWSECSTaskCreationDotNet
                   AwsvpcConfiguration = new Amazon.ECS.Model.AwsVpcConfiguration()
                   {
                      Subnets = config["Subnet"].Split( ',' ).ToList(),
-                     AssignPublicIp = AssignPublicIp.ENABLED,
+                     AssignPublicIp = AssignPublicIp.DISABLED,
                      SecurityGroups = new List<string> { config["SecurityGroup"] }
                   }
                },
@@ -387,6 +391,7 @@ namespace AWSECSTaskCreationDotNet
             var ec2Client = new Amazon.EC2.AmazonEC2Client(
                                  config["ECSApiKey"],
                                  config["ECSApiSecret"],
+                                 config["ECRApiSessionToken"],
                                  RegionEndpoint.GetBySystemName( config["ECRRegion"] ) );
             var describeNetObj = new Amazon.EC2.Model.DescribeNetworkInterfacesRequest();
             describeNetObj.Filters.Add( new Amazon.EC2.Model.Filter()
